@@ -1,19 +1,14 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Rate limiting
-const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 minutter
-    max: 100 // max 100 requests per windowMs
-});
+// Trust proxy for Railway deployment
+app.set('trust proxy', 1);
 
 // Middleware
-app.use(limiter);
 app.use(cors());
 app.use(bodyParser.json({ limit: '10mb' }));
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -26,7 +21,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Logging middleware
+// Simplified logging middleware (no rate limiting for now)
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - ${req.ip}`);
     next();
