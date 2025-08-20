@@ -21,7 +21,7 @@ app.use((req, res, next) => {
     next();
 });
 
-// Simplified logging middleware (no rate limiting for now)
+// Simplified logging middleware
 app.use((req, res, next) => {
     console.log(`${new Date().toISOString()} - ${req.method} ${req.path} - ${req.ip}`);
     next();
@@ -65,7 +65,7 @@ app.post('/request-verification', async (req, res) => {
     
     if (!phoneNumber || !/^\+?[1-9]\d{1,14}$/.test(phoneNumber)) {
         return res.status(400).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Ugyldig telefonnummer format'
         });
     }
@@ -82,14 +82,14 @@ app.post('/request-verification', async (req, res) => {
     if (smsResult.success) {
         console.log(`✅ Verifikasjonskode sendt til ${phoneNumber}: ${code}`);
         res.json({
-            success: true,
+            success: 1, // iOS forventer number, ikke boolean
             message: 'Verifikasjonskode sendt',
             // I produksjon: ikke returner koden!
             debug_code: process.env.NODE_ENV === 'development' ? code : undefined
         });
     } else {
         res.status(500).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Kunne ikke sende SMS'
         });
     }
@@ -100,7 +100,7 @@ app.post('/verify-code', (req, res) => {
     
     if (!phoneNumber || !code) {
         return res.status(400).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Telefonnummer og kode er påkrevd'
         });
     }
@@ -109,7 +109,7 @@ app.post('/verify-code', (req, res) => {
     
     if (!verification) {
         return res.status(404).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Ingen verifikasjon funnet for dette nummeret'
         });
     }
@@ -117,14 +117,14 @@ app.post('/verify-code', (req, res) => {
     if (Date.now() > verification.expires) {
         delete verificationCodes[phoneNumber];
         return res.status(410).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Verifikasjonskoden er utløpt'
         });
     }
     
     if (verification.code !== code) {
         return res.status(401).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Ugyldig verifikasjonskode'
         });
     }
@@ -154,7 +154,7 @@ app.post('/verify-code', (req, res) => {
     console.log(`✅ Bruker verifisert og registrert: ${phoneNumber} -> ${userId}`);
     
     res.json({
-        success: true,
+        success: 1, // iOS forventer number, ikke boolean
         message: 'Bruker verifisert og registrert',
         user: {
             userId: userId,
@@ -171,7 +171,7 @@ app.post('/register-device', (req, res) => {
     
     if (!phoneNumber) {
         return res.status(400).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Telefonnummer er påkrevd'
         });
     }
@@ -179,7 +179,7 @@ app.post('/register-device', (req, res) => {
     // Check if user exists
     if (!users[phoneNumber] || !users[phoneNumber].isVerified) {
         return res.status(404).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Bruker ikke funnet eller ikke verifisert'
         });
     }
@@ -201,7 +201,7 @@ app.post('/register-device', (req, res) => {
     }
     
     res.json({
-        success: true,
+        success: 1, // iOS forventer number
         message: 'Enhet registrert',
         deviceId: deviceId
     });
@@ -213,7 +213,7 @@ app.post('/call', (req, res) => {
     
     if (!from || !to) {
         return res.status(400).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'from og to er påkrevd'
         });
     }
@@ -221,7 +221,7 @@ app.post('/call', (req, res) => {
     // Validate caller
     if (!users[from] || !users[from].isVerified) {
         return res.status(401).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Ringer ikke verifisert'
         });
     }
@@ -280,20 +280,20 @@ app.post('/call', (req, res) => {
     }
     
     res.json({
-        success: true,
+        success: 1, // iOS forventer number
         message: 'Anrop initiert',
         callId: callId,
         toName: users[to].userName
     });
 });
 
-// MARK: - WebRTC Signaling (unchanged)
+// MARK: - WebRTC Signaling
 app.post('/offer', (req, res) => {
     const { callId, offer } = req.body;
     
     if (!callId || !offer || !calls[callId]) {
         return res.status(400).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Ugyldig callId eller offer'
         });
     }
@@ -310,7 +310,7 @@ app.post('/offer', (req, res) => {
     });
     
     console.log(`📥 WebRTC Offer mottatt for call: ${callId}`);
-    res.json({ success: true });
+    res.json({ success: 1 }); // iOS forventer number
 });
 
 app.post('/answer', (req, res) => {
@@ -318,7 +318,7 @@ app.post('/answer', (req, res) => {
     
     if (!callId || !answer || !calls[callId]) {
         return res.status(400).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Ugyldig callId eller answer'
         });
     }
@@ -334,7 +334,7 @@ app.post('/answer', (req, res) => {
     });
     
     console.log(`📥 WebRTC Answer mottatt for call: ${callId}`);
-    res.json({ success: true });
+    res.json({ success: 1 }); // iOS forventer number
 });
 
 app.post('/ice-candidate', (req, res) => {
@@ -342,7 +342,7 @@ app.post('/ice-candidate', (req, res) => {
     
     if (!callId || !candidate || !calls[callId]) {
         return res.status(400).json({
-            success: false,
+            success: 0, // iOS forventer number
             message: 'Ugyldig callId eller candidate'
         });
     }
@@ -362,17 +362,17 @@ app.post('/ice-candidate', (req, res) => {
         });
     });
     
-    res.json({ success: true });
+    res.json({ success: 1 }); // iOS forventer number
 });
 
-// MARK: - Events (unchanged)
+// MARK: - Events
 app.get('/events/:phoneNumber', (req, res) => {
     const phoneNumber = req.params.phoneNumber;
     const userEvents = events[phoneNumber] || [];
     events[phoneNumber] = [];
     
     res.json({
-        success: true,
+        success: 1, // iOS forventer number
         events: userEvents
     });
 });
@@ -387,7 +387,7 @@ app.get('/users', (req, res) => {
     }));
     
     res.json({
-        success: true,
+        success: 1, // iOS forventer number
         count: userList.length,
         users: userList
     });
@@ -395,7 +395,7 @@ app.get('/users', (req, res) => {
 
 app.get('/health', (req, res) => {
     res.json({
-        success: true,
+        success: 1, // iOS forventer number
         status: 'healthy',
         timestamp: new Date().toISOString(),
         uptime: process.uptime()
@@ -435,7 +435,7 @@ app.get('/', (req, res) => {
 app.use((err, req, res, next) => {
     console.error(`❌ Server error: ${err.message}`);
     res.status(500).json({
-        success: false,
+        success: 0, // iOS forventer number
         message: 'Intern server feil'
     });
 });
@@ -443,7 +443,7 @@ app.use((err, req, res, next) => {
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({
-        success: false,
+        success: 0, // iOS forventer number
         message: 'Endpoint ikke funnet'
     });
 });
